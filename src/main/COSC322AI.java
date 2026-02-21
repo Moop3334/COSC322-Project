@@ -7,7 +7,7 @@ public class COSC322AI {
 
     public int currentCost;
 
-    public boolena whitePieces;
+    public boolean whitePieces;
 
     /*Takes a boolean determining whether we play white pieces or black, and the current board state (This may need to change to an action and 
     store the game state internally, but I'm not sure, the documentation is hard to read.) Should return a move to make in this position.
