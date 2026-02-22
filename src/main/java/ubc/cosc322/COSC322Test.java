@@ -97,6 +97,7 @@ public class COSC322Test extends GamePlayer{
 		if (messageType.equalsIgnoreCase(GameMessage.GAME_STATE_BOARD)) {
 			gamegui.setGameState((ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE));
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_MOVE)) {
+			System.out.println(msgDetails);
 			gamegui.updateGameState(msgDetails);
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_START)) {
 			gamegui.setGameState((ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE));
