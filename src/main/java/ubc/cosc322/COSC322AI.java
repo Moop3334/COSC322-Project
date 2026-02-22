@@ -1,4 +1,6 @@
+package ubc.cosc322;
 import ygraph.ai.smartfox.games.amazons.AmazonsBoard;
+import java.util.ArrayList;
 
 public class COSC322AI {
 
@@ -12,8 +14,8 @@ public class COSC322AI {
     /*Takes a boolean determining whether we play white pieces or black, and the current board state (This may need to change to an action and 
     store the game state internally, but I'm not sure, the documentation is hard to read.) Should return a move to make in this position.
     */
-    public FindMove(boolean white, ArrayList<Integer> gameState){
-        Cosc322Node root = new Cosc322Node(gameState, 0); //Initialise current position as root.
+    public void FindMove(boolean white, ArrayList<Integer> gameState){
+        COSC322Node root = new COSC322Node(gameState, 0); //Initialise current position as root.
 
         //TODO: Perform A* search
     }

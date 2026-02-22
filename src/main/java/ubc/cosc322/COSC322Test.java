@@ -2,6 +2,7 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 
 import ygraph.ai.smartfox.games.BaseGameGUI;
@@ -30,7 +31,8 @@ public class COSC322Test extends GamePlayer{
      * The main method
      * @param args for name and passwd (current, any string would work)
      */
-    public static void main(String[] args) {				 
+    public static void main(String[] args) {
+				 
     	try {
 			COSC322Test player = new COSC322Test("dev", "test");
 
