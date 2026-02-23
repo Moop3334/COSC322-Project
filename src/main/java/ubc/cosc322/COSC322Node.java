@@ -41,12 +41,12 @@ public class COSC322Node {
         //helper method that generates all of the legal arrow positions from a given queen move
         ArrayList<Integer> legalArrowPositions = new ArrayList<Integer>();
 
-        for(int i = newQueenPos; i >= 0; i -= 8){ //look up
+        for(int i = newQueenPos - 8; i >= 0; i -= 8){ //look up
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break; //This position is occupied, and we can go no further (oldQueenPos is not empty in state, but will be after queen move, so we need to ignore it)
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos; i < 64; i += 8){ //look down
+        for(int i = newQueenPos + 8; i < 64; i += 8){ //look down
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
