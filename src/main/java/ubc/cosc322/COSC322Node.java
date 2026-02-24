@@ -19,7 +19,7 @@ public class COSC322Node {
     }
 
     public ArrayList<COSC322Node> expandNode(boolean whitePieces){
-        //TODO: Creates a list of nodes containing all possible moves from this node.
+        //Creates a list of nodes containing all possible moves from this node.
         ArrayList<COSC322Node> nodes = new ArrayList<COSC322Node>();
 
         for (int i = 0; i < 64; i++){
