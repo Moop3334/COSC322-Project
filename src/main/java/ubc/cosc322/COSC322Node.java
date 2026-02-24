@@ -13,9 +13,9 @@ public class COSC322Node {
         this.g = costToReach;
     }
 
-    public int getFValueAStar(){
+    public int getFValueAStar(boolean whitePieces){
         //Return the A* value f = (g + h) of this node
-        return g + getHValue();
+        return g + getHValue(whitePieces);
     }
 
     public ArrayList<COSC322Node> expandNode(boolean whitePieces){
@@ -93,10 +93,29 @@ public class COSC322Node {
         return new COSC322Node(newState, g + 1);
     }
 
-    public int getHValue(){
-        /*TODO: find the H value of this node (should probably call some other h-value method so that 
-        we can experiment with different heuristics if desired.) */
-        return 0;
+    public int getHValue(boolean whitePieces){
+        // Calling our mobility heuristic.
+        return calculateMobilityHeuristic(whitePieces);
+    }
+
+    private int calculateMobilityHeuristic(boolean whitePieces) {
+        int myMobility = 0;
+        int opponentMobility = 0;
+        
+        int myPlayerId = whitePieces ? 1 : 2;
+        int opponentPlayerId = whitePieces ? 2 : 1;
+
+        for (int i = 0; i < 64; i++) {
+            int piece = state.get(i);
+            
+            if (piece == myPlayerId) {
+                myMobility += getArrowPlacementsFromMove(-100, i, whitePieces).size();
+            } else if (piece == opponentPlayerId) {
+                opponentMobility += getArrowPlacementsFromMove(-100, i, !whitePieces).size();
+            }
+        }
+        
+        return opponentMobility - myMobility;
     }
     
 }
