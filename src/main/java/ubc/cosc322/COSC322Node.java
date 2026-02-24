@@ -37,7 +37,7 @@ public class COSC322Node {
 
     }
 
-    private ArrayList<Integer> getArrowPlacementsFromMove(int oldQueenPos, int newQueenPos, boolean whitePieces){
+    public ArrayList<Integer> getArrowPlacementsFromMove(int oldQueenPos, int newQueenPos, boolean whitePieces){
         //helper method that generates all of the legal arrow positions from a given queen move
         ArrayList<Integer> legalArrowPositions = new ArrayList<Integer>();
 
