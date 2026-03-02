@@ -25,6 +25,11 @@ public class COSC322Test extends GamePlayer{
 	
     private String userName = null;
     private String passwd = null;
+
+	//To use the AI
+	private COSC322AI ai = new COSC322AI();
+	private boolean isWhite;
+	private ArrayList<Integer> currentBoardState;
  
 	
     /**
@@ -34,13 +39,13 @@ public class COSC322Test extends GamePlayer{
     public static void main(String[] args) {
 				 
     	try {
-			COSC322Test player = new COSC322Test("dev", "test");
+			COSC322Test player = new COSC322Test("dev1", "test");
 
 			/*
 			
 			*/
-			HumanPlayer human1 = new HumanPlayer();
-			HumanPlayer human2 = new HumanPlayer();
+			//HumanPlayer human1 = new HumanPlayer();
+			//HumanPlayer human2 = new HumanPlayer();
 
 			if(player.getGameGUI() == null) {
     			player.Go();
@@ -53,8 +58,8 @@ public class COSC322Test extends GamePlayer{
 						/* 
 						
 						*/ 
-						human1.Go();
-						human2.Go();
+						//human1.Go();
+						//human2.Go();
             	    }
            		});
     		}
@@ -97,12 +102,32 @@ public class COSC322Test extends GamePlayer{
     	//For a detailed description of the message types and format, 
     	//see the method GamePlayer.handleGameMessage() in the game-client-api document. 
 		if (messageType.equalsIgnoreCase(GameMessage.GAME_STATE_BOARD)) {
-			gamegui.setGameState((ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE));
+			currentBoardState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
+			System.out.println("DEBUG GAME_STATE_BOARD: " + currentBoardState);
+			if (currentBoardState != null) {
+				gamegui.setGameState(currentBoardState);
+			}
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_MOVE)) {
 			System.out.println(msgDetails);
 			gamegui.updateGameState(msgDetails);
+			ArrayList<Integer> queenCurrent = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
+			ArrayList<Integer> queenNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
+			ArrayList<Integer> arrow = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
+			applyMove(queenCurrent, queenNext, arrow);
+			makeMove();
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_START)) {
 			gamegui.setGameState((ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE));
+			String blackPlayer = (String) msgDetails.get(AmazonsGameMessage.PLAYER_BLACK);
+			String whitePlayer = (String) msgDetails.get(AmazonsGameMessage.PLAYER_WHITE);
+			isWhite = userName.equals(whitePlayer);
+			System.out.println("We are playing as: " + (isWhite ? "WHITE" : "BLACK"));
+
+			if (isWhite) {
+				if (currentBoardState == null) {
+					currentBoardState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
+				}
+				makeMove();
+			}
 			
 		}
     	return true;   	
@@ -132,5 +157,80 @@ public class COSC322Test extends GamePlayer{
     	gameClient = new GameClient(userName, passwd, this);		
 	}
 
- 
+
+
+
+
+	private void applyMove(ArrayList<Integer> queenCurrent, ArrayList<Integer> queenNext, ArrayList<Integer> arrow) {
+		if (currentBoardState == null) return;
+		int from = queenCurrent.get(0) * 11 + queenCurrent.get(1);
+		int to = queenNext.get(0) * 11 + queenNext.get(1);
+		int arr = arrow.get(0) * 11 + arrow.get(1);
+		int piece = currentBoardState.get(from);
+		currentBoardState.set(from, 0);
+		currentBoardState.set(to, piece);
+		currentBoardState.set(arr, 3);
+	}
+	
+
+
+
+	private void makeMove() {
+		if (currentBoardState == null) {
+			return;
+		}
+		
+		COSC322Node move = ai.FindMove(isWhite, currentBoardState);
+		if (move == null || move.parent == null) {
+			// No valid moves available - we lost!
+			System.out.println("========================================");
+			System.out.println("GAME OVER - WE LOST! No valid moves remaining.");
+			System.out.println("We played as: " + (isWhite ? "WHITE" : "BLACK"));
+			System.out.println("========================================");
+			return;
+		}
+		
+		// Extract move by comparing states
+		ArrayList<Integer> parent = move.parent.state;
+		ArrayList<Integer> child = move.state;
+		int ourPiece = isWhite ? 1 : 2;
+		int fromIdx = -1, toIdx = -1, arrowIdx = -1;
+		
+		for (int i = 0; i < 121; i++) {
+			int pVal = parent.get(i);
+			int cVal = child.get(i);
+			
+			if (pVal == ourPiece && cVal == 0) {
+				// Queen left this square (no arrow here)
+				fromIdx = i;
+			} else if (pVal == ourPiece && cVal == 3) {
+				// Queen left and arrow placed on same square
+				fromIdx = i;
+				arrowIdx = i;
+			} else if (pVal != ourPiece && cVal == ourPiece) {
+				// Queen moved here
+				toIdx = i;
+			} else if (pVal == 0 && cVal == 3) {
+				// Arrow placed on empty square
+				arrowIdx = i;
+			}
+		}
+		
+
+		if (fromIdx == -1 || toIdx == -1 || arrowIdx == -1) {
+			return;
+		}
+		
+		ArrayList<Integer> qCurr = new ArrayList<>();
+		qCurr.add(fromIdx / 11); qCurr.add(fromIdx % 11);
+		ArrayList<Integer> qNext = new ArrayList<>();
+		qNext.add(toIdx / 11); qNext.add(toIdx % 11);
+		ArrayList<Integer> arrow = new ArrayList<>();
+		arrow.add(arrowIdx / 11); arrow.add(arrowIdx % 11);
+
+		currentBoardState = new ArrayList<>(child);
+		gameClient.sendMoveMessage(qCurr, qNext, arrow);
+		gamegui.updateGameState(qCurr, qNext, arrow);
+	}
+
 }//end of class
