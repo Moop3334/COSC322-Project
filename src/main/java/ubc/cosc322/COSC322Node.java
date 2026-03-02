@@ -22,7 +22,7 @@ public class COSC322Node {
         //Creates a list of nodes containing all possible moves from this node.
         ArrayList<COSC322Node> nodes = new ArrayList<COSC322Node>();
 
-        for (int i = 0; i < 64; i++){
+        for (int i = 0; i < 121; i++){
             if(state.get(i) == (whitePieces? 1:2)){ //These are our queens, find all possible moves for each.
                 ArrayList<Integer> queenMoves = getArrowPlacementsFromMove(-100, i, whitePieces); //This is a little hacky, but passing in an impossible oldQueenPos allows the arrow function to be reused for getting all possible queen moves
                 for(Integer j: queenMoves){ //For each possible move, get all possible arrow placements
@@ -41,42 +41,50 @@ public class COSC322Node {
         //helper method that generates all of the legal arrow positions from a given queen move
         ArrayList<Integer> legalArrowPositions = new ArrayList<Integer>();
 
-        for(int i = newQueenPos - 8; i >= 0; i -= 8){ //look up
+        for(int i = newQueenPos - 11; i >= 0; i -= 11){ //look up
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break; //This position is occupied, and we can go no further (oldQueenPos is not empty in state, but will be after queen move, so we need to ignore it)
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos + 8; i < 64; i += 8){ //look down
+        for(int i = newQueenPos + 11; i < 121; i += 11){ //look down
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos - 1; i % 8 != 7 && i >= 0; i--){ //look left
+        for(int i = newQueenPos - 1; i % 11 != 0 && i >= 0; i--){ //look left
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break; 
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos + 1; i % 8 != 0 && i < 64; i++){ //look right
+        for(int i = newQueenPos + 1; i % 11 != 0 && i < 121; i++){ //look right
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos - 7; i % 8 != 0 && i >= 0; i -= 7){//look up-right
+        for(int i = newQueenPos - 10; i % 11 != 0 && i >= 0; i -= 10){//look up-right
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos - 9; i % 8 != 7 && i >= 0; i -= 9){//look up-left
+        for(int i = newQueenPos - 12; i % 11 != 10 && i >= 0; i -= 12){//look up-left
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos + 7; i % 8 != 7 && i < 64; i += 7){//look down-left
+        for(int i = newQueenPos + 10; i % 11 != 10 && i < 121; i += 10){//look down-left
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
         }
-        for(int i = newQueenPos + 9; i % 8 != 0 && i < 64; i += 9){//look down-right
+        for(int i = newQueenPos + 12; i % 11 != 0 && i < 121; i += 12){//look down-right
+            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
             int position = state.get(i);
             if(i != oldQueenPos && position != 0) break;
             if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
@@ -105,7 +113,7 @@ public class COSC322Node {
         int myPlayerId = whitePieces ? 1 : 2;
         int opponentPlayerId = whitePieces ? 2 : 1;
 
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < 121; i++) {
             int piece = state.get(i);
             
             if (piece == myPlayerId) {

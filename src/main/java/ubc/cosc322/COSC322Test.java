@@ -14,98 +14,100 @@ import ygraph.ai.smartfox.games.amazons.HumanPlayer;
 
 /**
  * An example illustrating how to implement a GamePlayer
+ * 
  * @author Yong Gao (yong.gao@ubc.ca)
- * Jan 5, 2021
+ *         Jan 5, 2021
  *
  */
-public class COSC322Test extends GamePlayer{
+public class COSC322Test extends GamePlayer {
 
-    private GameClient gameClient = null; 
-    private BaseGameGUI gamegui = null;
-	
-    private String userName = null;
-    private String passwd = null;
+	private GameClient gameClient = null;
+	private BaseGameGUI gamegui = null;
 
-	//To use the AI
+	private String userName = null;
+	private String passwd = null;
+
+	// To use the AI
 	private COSC322AI ai = new COSC322AI();
 	private boolean isWhite;
 	private ArrayList<Integer> currentBoardState;
- 
-	
-    /**
-     * The main method
-     * @param args for name and passwd (current, any string would work)
-     */
-    public static void main(String[] args) {
-				 
-    	try {
-			COSC322Test player = new COSC322Test("dev1", "test");
+
+	/**
+	 * The main method
+	 * 
+	 * @param args for name and passwd (current, any string would work)
+	 */
+	public static void main(String[] args) {
+
+		try {
+			COSC322Test player = new COSC322Test("dev1" + (int) (Math.random() * 10), "test");
 
 			/*
 			
 			*/
-			//HumanPlayer human1 = new HumanPlayer();
-			//HumanPlayer human2 = new HumanPlayer();
+			// HumanPlayer human1 = new HumanPlayer();
+			// HumanPlayer human2 = new HumanPlayer();
 
-			if(player.getGameGUI() == null) {
-    			player.Go();
-    		}
-    		else {
-    			BaseGameGUI.sys_setup();
-            	java.awt.EventQueue.invokeLater(new Runnable() {
-                	public void run() {
-                		player.Go();
+			if (player.getGameGUI() == null) {
+				player.Go();
+			} else {
+				BaseGameGUI.sys_setup();
+				java.awt.EventQueue.invokeLater(new Runnable() {
+					public void run() {
+						player.Go();
 						/* 
 						
-						*/ 
-						//human1.Go();
-						//human2.Go();
-            	    }
-           		});
-    		}
+						*/
+						// human1.Go();
+						// human2.Go();
+					}
+				});
+			}
 		} catch (IndexOutOfBoundsException e) {
 			System.out.println("Error: Please run with arguments");
 		}
-    }
-	
-    /**
-     * Any name and passwd 
-     * @param userName
-      * @param passwd
-     */
-    public COSC322Test(String userName, String passwd) {
-    	this.userName = userName;
-    	this.passwd = passwd;
+	}
 
-    	
-    	//To make a GUI-based player, create an instance of BaseGameGUI
+	/**
+	 * Any name and passwd
+	 * 
+	 * @param userName
+	 * @param passwd
+	 */
+	public COSC322Test(String userName, String passwd) {
+		this.userName = userName;
+		this.passwd = passwd;
+
+		// To make a GUI-based player, create an instance of BaseGameGUI
 		this.gamegui = new BaseGameGUI(this);
-    	//and implement the method getGameGUI() accordingly
-    	//this.gamegui = new BaseGameGUI(this);
-    }
- 
+		// and implement the method getGameGUI() accordingly
+		// this.gamegui = new BaseGameGUI(this);
+	}
 
+	@Override
+	public void onLogin() {
+		userName = gameClient.getUserName();
+		if (gamegui != null) {
+			gamegui.setRoomInformation(gameClient.getRoomList());
+		}
+	}
 
-    @Override
-    public void onLogin() {
-		userName = gameClient.getUserName(); 
-    	if(gamegui != null) { 
-   			gamegui.setRoomInformation(gameClient.getRoomList()); 
-    	} 
-    }
+	@Override
+	public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
+		// This method will be called by the GameClient when it receives a game-related
+		// message
+		// from the server.
 
-    @Override
-    public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
-    	//This method will be called by the GameClient when it receives a game-related message
-    	//from the server.
-	
-    	//For a detailed description of the message types and format, 
-    	//see the method GamePlayer.handleGameMessage() in the game-client-api document. 
+		// For a detailed description of the message types and format,
+		// see the method GamePlayer.handleGameMessage() in the game-client-api
+		// document.
 		if (messageType.equalsIgnoreCase(GameMessage.GAME_STATE_BOARD)) {
-			currentBoardState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
-			System.out.println("DEBUG GAME_STATE_BOARD: " + currentBoardState);
-			if (currentBoardState != null) {
-				gamegui.setGameState(currentBoardState);
+			ArrayList<Integer> state = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
+			if (state != null) {
+				this.currentBoardState = new ArrayList<>(state); // Clone it to be safe
+				gamegui.setGameState(this.currentBoardState);
+			} else {
+				System.err.println("Failed to load board: Message details returned null for GAME_STATE");
 			}
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_MOVE)) {
 			System.out.println(msgDetails);
@@ -116,28 +118,31 @@ public class COSC322Test extends GamePlayer{
 			applyMove(queenCurrent, queenNext, arrow);
 			makeMove();
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_START)) {
-			gamegui.setGameState((ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE));
+			ArrayList<Integer> state = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
+
+			// Only update the GUI if the state actually exists in this message
+			if (state != null) {
+				this.currentBoardState = new ArrayList<>(state);
+				gamegui.setGameState(this.currentBoardState);
+			}
+
 			String blackPlayer = (String) msgDetails.get(AmazonsGameMessage.PLAYER_BLACK);
 			String whitePlayer = (String) msgDetails.get(AmazonsGameMessage.PLAYER_WHITE);
 			isWhite = userName.equals(whitePlayer);
+
 			System.out.println("We are playing as: " + (isWhite ? "WHITE" : "BLACK"));
 
-			if (isWhite) {
-				if (currentBoardState == null) {
-					currentBoardState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
-				}
+			if (isWhite && this.currentBoardState != null) {
 				makeMove();
 			}
-			
 		}
-    	return true;   	
-    }
-    
-    
-    @Override
-    public String userName() {
-    	return userName;
-    }
+		return true;
+	}
+
+	@Override
+	public String userName() {
+		return userName;
+	}
 
 	@Override
 	public GameClient getGameClient() {
@@ -148,21 +153,19 @@ public class COSC322Test extends GamePlayer{
 	@Override
 	public BaseGameGUI getGameGUI() {
 		// TODO Auto-generated method stub
-		return  this.gamegui;
+		return this.gamegui;
 	}
 
 	@Override
 	public void connect() {
 		// TODO Auto-generated method stub
-    	gameClient = new GameClient(userName, passwd, this);		
+		gameClient = new GameClient(userName, passwd, this);
 	}
 
-
-
-
-
 	private void applyMove(ArrayList<Integer> queenCurrent, ArrayList<Integer> queenNext, ArrayList<Integer> arrow) {
-		if (currentBoardState == null) return;
+		if (currentBoardState == null || queenCurrent == null || queenNext == null || arrow == null) {
+        	return;
+    	}
 		int from = queenCurrent.get(0) * 11 + queenCurrent.get(1);
 		int to = queenNext.get(0) * 11 + queenNext.get(1);
 		int arr = arrow.get(0) * 11 + arrow.get(1);
@@ -171,15 +174,12 @@ public class COSC322Test extends GamePlayer{
 		currentBoardState.set(to, piece);
 		currentBoardState.set(arr, 3);
 	}
-	
-
-
 
 	private void makeMove() {
 		if (currentBoardState == null) {
 			return;
 		}
-		
+
 		COSC322Node move = ai.FindMove(isWhite, currentBoardState);
 		if (move == null || move.parent == null) {
 			// No valid moves available - we lost!
@@ -189,48 +189,43 @@ public class COSC322Test extends GamePlayer{
 			System.out.println("========================================");
 			return;
 		}
-		
+
 		// Extract move by comparing states
 		ArrayList<Integer> parent = move.parent.state;
 		ArrayList<Integer> child = move.state;
-		int ourPiece = isWhite ? 1 : 2;
+
 		int fromIdx = -1, toIdx = -1, arrowIdx = -1;
-		
+		int ourPiece = isWhite ? 1 : 2;
+
 		for (int i = 0; i < 121; i++) {
-			int pVal = parent.get(i);
-			int cVal = child.get(i);
-			
-			if (pVal == ourPiece && cVal == 0) {
-				// Queen left this square (no arrow here)
+			int p = parent.get(i);
+			int c = child.get(i);
+
+			if (p == ourPiece && c != ourPiece)
 				fromIdx = i;
-			} else if (pVal == ourPiece && cVal == 3) {
-				// Queen left and arrow placed on same square
-				fromIdx = i;
-				arrowIdx = i;
-			} else if (pVal != ourPiece && cVal == ourPiece) {
-				// Queen moved here
+			if (p != ourPiece && c == ourPiece)
 				toIdx = i;
-			} else if (pVal == 0 && cVal == 3) {
-				// Arrow placed on empty square
+			if (p != 3 && c == 3)
 				arrowIdx = i;
-			}
 		}
-		
 
 		if (fromIdx == -1 || toIdx == -1 || arrowIdx == -1) {
 			return;
 		}
-		
+
 		ArrayList<Integer> qCurr = new ArrayList<>();
-		qCurr.add(fromIdx / 11); qCurr.add(fromIdx % 11);
+		qCurr.add(fromIdx / 11);
+		qCurr.add(fromIdx % 11);
 		ArrayList<Integer> qNext = new ArrayList<>();
-		qNext.add(toIdx / 11); qNext.add(toIdx % 11);
+		qNext.add(toIdx / 11);
+		qNext.add(toIdx % 11);
 		ArrayList<Integer> arrow = new ArrayList<>();
-		arrow.add(arrowIdx / 11); arrow.add(arrowIdx % 11);
+		arrow.add(arrowIdx / 11);
+		arrow.add(arrowIdx % 11);
 
 		currentBoardState = new ArrayList<>(child);
 		gameClient.sendMoveMessage(qCurr, qNext, arrow);
 		gamegui.updateGameState(qCurr, qNext, arrow);
 	}
 
-}//end of class
+}// end of class
