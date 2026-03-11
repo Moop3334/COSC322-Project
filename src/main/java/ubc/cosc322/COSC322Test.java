@@ -132,13 +132,12 @@ public class COSC322Test extends GamePlayer {
 			isWhite = userName.equals(whitePlayer);
 
 			System.out.println("We are playing as: " + (isWhite ? "WHITE" : "BLACK"));
-			System.out.println("Black goes first check: !isWhite = " + (!isWhite));
 
 			if (!isWhite && this.currentBoardState != null) {
 				System.out.println("BLACK making first move!");
 				makeMove();
-			} else if (isWhite) {
-				System.out.println("WHITE waiting for Black to move first...");
+			} else {
+				System.out.println("Waiting for opponent to move...");
 			}
 		}
 		return true;
@@ -205,7 +204,7 @@ public class COSC322Test extends GamePlayer {
 		int[] child = move.state;
 
 		int fromIdx = -1, toIdx = -1, arrowIdx = -1;
-		int ourPiece = isWhite ? 1 : 2;
+		int ourPiece = isWhite ? 2 : 1;
 
 		// Find queen movement: where our piece left and where it arrived
 		for (int i = 0; i < 121; i++) {

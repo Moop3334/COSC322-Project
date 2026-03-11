@@ -17,9 +17,10 @@ public class COSC322Node {
 
     public ArrayList<COSC322Node> expandNode(boolean whitePieces) {
         ArrayList<COSC322Node> nodes = new ArrayList<>();
-        int pieceId = whitePieces ? 1 : 2;
+        int pieceId = whitePieces ? 2 : 1;
 
         for (int i = 0; i < 121; i++) {
+            if (i % 11 == 0 || i / 11 == 0) continue;
             if (state[i] == pieceId) {
                 for (int j : getReachableSquares(i, i)) {
                     for (int k : getReachableSquares(i, j)) {
@@ -31,50 +32,28 @@ public class COSC322Node {
         return nodes;
     }
 
-    // Returns all squares reachable from newPos in queen-move lines.
-    // oldPos is treated as empty (the queen vacated it); pass -100 if no old position.
     public ArrayList<Integer> getReachableSquares(int oldPos, int newPos) {
         ArrayList<Integer> squares = new ArrayList<>();
+        int row = newPos / 11;
+        int col = newPos % 11;
 
-        for (int i = newPos - 11; i >= 0; i -= 11) {          // up
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos + 11; i < 121; i += 11) {          // down
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos - 1; i % 11 != 0 && i >= 0; i--) { // left
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos + 1; i % 11 != 0 && i < 121; i++) { // right
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos - 10; i % 11 != 0 && i >= 0; i -= 10) {  // up-right
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos - 12; i % 11 != 10 && i >= 0; i -= 12) { // up-left
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos + 10; i % 11 != 10 && i < 121; i += 10) { // down-left
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
-        }
-        for (int i = newPos + 12; i % 11 != 0 && i < 121; i += 12) {  // down-right
-            if (i % 11 == 0 || i / 11 == 0) continue;
-            if (i != oldPos && state[i] != 0) break;
-            squares.add(i);
+        int[][] directions = {
+            {-1, 0}, {1, 0}, {0, -1}, {0, 1}, // up, down, left, right
+            {-1, 1}, {-1, -1}, {1, -1}, {1, 1} // up-right, up-left, down-left, down-right
+        };
+
+        for (int[] dir : directions) {
+            int r = row;
+            int c = col;
+            while (true) {
+                r += dir[0];
+                c += dir[1];
+                if (r < 1 || r > 10 || c < 1 || c > 10) break;
+                
+                int next = r * 11 + c;
+                if (next != oldPos && state[next] != 0) break;
+                squares.add(next);
+            }
         }
         return squares;
     }
@@ -111,8 +90,8 @@ public class COSC322Node {
 
         for (int i = 0; i < 121; i++) {
             if (i % 11 == 0 || i / 11 == 0) continue;
-            if (state[i] == 1) { wDist[i] = 0; wQueue.add(i); }
-            else if (state[i] == 2) { bDist[i] = 0; bQueue.add(i); }
+            if (state[i] == 2) { wDist[i] = 0; wQueue.add(i); }
+            else if (state[i] == 1) { bDist[i] = 0; bQueue.add(i); }
         }
 
         bfsFlood(wDist, wQueue);
