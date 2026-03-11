@@ -190,16 +190,16 @@ public class COSC322Test extends GamePlayer {
 			return;
 		}
 
-		// Extract move by comparing states
-		ArrayList<Integer> parent = move.parent.state;
-		ArrayList<Integer> child = move.state;
+		// Extract move by comparing parent/child int[] states
+		int[] parent = move.parent.state;
+		int[] child = move.state;
 
 		int fromIdx = -1, toIdx = -1, arrowIdx = -1;
 		int ourPiece = isWhite ? 1 : 2;
 
 		for (int i = 0; i < 121; i++) {
-			int p = parent.get(i);
-			int c = child.get(i);
+			int p = parent[i];
+			int c = child[i];
 
 			if (p == ourPiece && c != ourPiece)
 				fromIdx = i;
@@ -223,7 +223,8 @@ public class COSC322Test extends GamePlayer {
 		arrow.add(arrowIdx / 11);
 		arrow.add(arrowIdx % 11);
 
-		currentBoardState = new ArrayList<>(child);
+		// Sync currentBoardState (ArrayList) from the chosen child int[]
+		for (int i = 0; i < 121; i++) currentBoardState.set(i, child[i]);
 		gameClient.sendMoveMessage(qCurr, qNext, arrow);
 		gamegui.updateGameState(qCurr, qNext, arrow);
 	}

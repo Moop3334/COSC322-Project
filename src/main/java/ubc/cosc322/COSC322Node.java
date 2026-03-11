@@ -1,129 +1,150 @@
 package ubc.cosc322;
+
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+
 public class COSC322Node {
-    
-    public ArrayList<Integer> state;  //The gamestate stored by this node
 
-    public int g; //The cost to reach this game state
+    public int[] state;   // 121-element board (11x11 with row 0 and col 0 as padding)
+    public int g;
+    public COSC322Node parent;
 
-    public COSC322Node parent; //parent node
-
-    public COSC322Node(ArrayList<Integer> state, int costToReach){
+    public COSC322Node(int[] state, int costToReach) {
         this.state = state;
         this.g = costToReach;
     }
 
-    public int getFValueAStar(boolean whitePieces){
-        //Return the A* value f = (g + h) of this node
-        return g + getHValue(whitePieces);
-    }
+    public ArrayList<COSC322Node> expandNode(boolean whitePieces) {
+        ArrayList<COSC322Node> nodes = new ArrayList<>();
+        int pieceId = whitePieces ? 1 : 2;
 
-    public ArrayList<COSC322Node> expandNode(boolean whitePieces){
-        //Creates a list of nodes containing all possible moves from this node.
-        ArrayList<COSC322Node> nodes = new ArrayList<COSC322Node>();
-
-        for (int i = 0; i < 121; i++){
-            if(state.get(i) == (whitePieces? 1:2)){ //These are our queens, find all possible moves for each.
-                ArrayList<Integer> queenMoves = getArrowPlacementsFromMove(-100, i, whitePieces); //This is a little hacky, but passing in an impossible oldQueenPos allows the arrow function to be reused for getting all possible queen moves
-                for(Integer j: queenMoves){ //For each possible move, get all possible arrow placements
-                    ArrayList<Integer> arrowPlacements = getArrowPlacementsFromMove(i, j, whitePieces);
-                    for (Integer k: arrowPlacements){
-                        nodes.add(generateChildFromAction(i, j, k, whitePieces)); //Finally, create a node for each complete move, and append it to our list.
+        for (int i = 0; i < 121; i++) {
+            if (state[i] == pieceId) {
+                for (int j : getReachableSquares(-100, i)) {
+                    for (int k : getReachableSquares(i, j)) {
+                        nodes.add(generateChild(i, j, k, pieceId));
                     }
                 }
             }
         }
         return nodes;
-
     }
 
-    public ArrayList<Integer> getArrowPlacementsFromMove(int oldQueenPos, int newQueenPos, boolean whitePieces){
-        //helper method that generates all of the legal arrow positions from a given queen move
-        ArrayList<Integer> legalArrowPositions = new ArrayList<Integer>();
+    // Returns all squares reachable from newPos in queen-move lines.
+    // oldPos is treated as empty (the queen vacated it); pass -100 if no old position.
+    public ArrayList<Integer> getReachableSquares(int oldPos, int newPos) {
+        ArrayList<Integer> squares = new ArrayList<>();
 
-        for(int i = newQueenPos - 11; i >= 0; i -= 11){ //look up
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break; //This position is occupied, and we can go no further (oldQueenPos is not empty in state, but will be after queen move, so we need to ignore it)
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos - 11; i >= 0; i -= 11) {          // up
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos + 11; i < 121; i += 11){ //look down
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break;
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos + 11; i < 121; i += 11) {          // down
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos - 1; i % 11 != 0 && i >= 0; i--){ //look left
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break; 
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos - 1; i % 11 != 0 && i >= 0; i--) { // left
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos + 1; i % 11 != 0 && i < 121; i++){ //look right
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break;
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos + 1; i % 11 != 0 && i < 121; i++) { // right
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos - 10; i % 11 != 0 && i >= 0; i -= 10){//look up-right
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break;
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos - 10; i % 11 != 0 && i >= 0; i -= 10) {  // up-right
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos - 12; i % 11 != 10 && i >= 0; i -= 12){//look up-left
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break;
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos - 12; i % 11 != 10 && i >= 0; i -= 12) { // up-left
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos + 10; i % 11 != 10 && i < 121; i += 10){//look down-left
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break;
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos + 10; i % 11 != 10 && i < 121; i += 10) { // down-left
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        for(int i = newQueenPos + 12; i % 11 != 0 && i < 121; i += 12){//look down-right
-            if(i % 11 == 0 || i/11 == 0) continue; //skip padding
-            int position = state.get(i);
-            if(i != oldQueenPos && position != 0) break;
-            if(!legalArrowPositions.contains(i)) legalArrowPositions.add(i);
+        for (int i = newPos + 12; i % 11 != 0 && i < 121; i += 12) {  // down-right
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (i != oldPos && state[i] != 0) break;
+            squares.add(i);
         }
-        return legalArrowPositions;
+        return squares;
     }
 
-    private COSC322Node generateChildFromAction(int oldQueenPos, int newQueenPos, int arrowPos, boolean whitePieces){
-        //helper method that generates a node for a given action based on this node's state
-        ArrayList<Integer> newState = new ArrayList<Integer>(state);
-        newState.set(oldQueenPos, 0);
-        newState.set(newQueenPos, (whitePieces? 1:2));
-        newState.set(arrowPos, 3); //arrow can be anything other than 0, 1, or 2, it doesn't really matter.
+    private COSC322Node generateChild(int from, int to, int arrow, int pieceId) {
+        int[] newState = state.clone();
+        newState[from] = 0;
+        newState[to] = pieceId;
+        newState[arrow] = 3;
         return new COSC322Node(newState, g + 1);
     }
 
-    public int getHValue(boolean whitePieces){
-        // Calling our mobility heuristic.
-        return calculateMobilityHeuristic(whitePieces);
+    // Returns territory score from the perspective of whitePieces player.
+    // Positive = we control more territory, negative = opponent controls more.
+    public int evaluate(boolean whitePieces) {
+        return territoryScore(whitePieces);
     }
 
-    private int calculateMobilityHeuristic(boolean whitePieces) {
-        int myMobility = 0;
-        int opponentMobility = 0;
-        
-        int myPlayerId = whitePieces ? 1 : 2;
-        int opponentPlayerId = whitePieces ? 2 : 1;
+    // BFS flood fill from all queens simultaneously.
+    // A square belongs to the side that reaches it first.
+    // Score = our squares - opponent squares.
+    private int territoryScore(boolean whitePieces) {
+        int[] wDist = new int[121];
+        int[] bDist = new int[121];
+        final int INF = Integer.MAX_VALUE / 2;
 
         for (int i = 0; i < 121; i++) {
-            int piece = state.get(i);
-            
-            if (piece == myPlayerId) {
-                myMobility += getArrowPlacementsFromMove(-100, i, whitePieces).size();
-            } else if (piece == opponentPlayerId) {
-                opponentMobility += getArrowPlacementsFromMove(-100, i, !whitePieces).size();
+            wDist[i] = INF;
+            bDist[i] = INF;
+        }
+
+        Queue<Integer> wQueue = new LinkedList<>();
+        Queue<Integer> bQueue = new LinkedList<>();
+
+        for (int i = 0; i < 121; i++) {
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (state[i] == 1) { wDist[i] = 0; wQueue.add(i); }
+            else if (state[i] == 2) { bDist[i] = 0; bQueue.add(i); }
+        }
+
+        bfsFlood(wDist, wQueue);
+        bfsFlood(bDist, bQueue);
+
+        int wTerritory = 0, bTerritory = 0;
+        for (int i = 0; i < 121; i++) {
+            if (i % 11 == 0 || i / 11 == 0) continue;
+            if (state[i] != 0) continue; // occupied or burned
+            if (wDist[i] < bDist[i]) wTerritory++;
+            else if (bDist[i] < wDist[i]) bTerritory++;
+        }
+
+        return whitePieces ? wTerritory - bTerritory : bTerritory - wTerritory;
+    }
+
+    // Step-by-step BFS in 8 directions (treats queens and arrows as walls).
+    private void bfsFlood(int[] dist, Queue<Integer> queue) {
+        int[] steps = {-11, 11, -1, 1, -10, -12, 10, 12};
+
+        while (!queue.isEmpty()) {
+            int pos = queue.poll();
+            for (int step : steps) {
+                int next = pos + step;
+                if (next < 0 || next >= 121) continue;
+                if (next % 11 == 0 || next / 11 == 0) continue;
+                if (state[next] != 0) continue; // blocked by queen or arrow
+                if (dist[next] > dist[pos] + 1) {
+                    dist[next] = dist[pos] + 1;
+                    queue.add(next);
+                }
             }
         }
-        
-        return opponentMobility - myMobility;
     }
-    
 }

@@ -1,139 +1,104 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class COSC322AI {
 
-    // These can be used for persistence if needed, I'm not convinced that we need
-    // them but they are provided regardless.
-    public ArrayList<Integer> currentpos;
+    private static final long TIME_LIMIT_MS = 8000; // 8 seconds per move
+    private boolean timeUp;
 
-    public int currentCost;
-
-    // public boolean whitePieces;
-
-    /*
-     * Takes a boolean determining whether we play white pieces or black, and the
-     * current board state (This may need to change to an action and
-     * store the game state internally, but I'm not sure, the documentation is hard
-     * to read.) Should return a move to make in this position.
-     */
-
-    //Temporary placeholder, should be replaced with something better
+    // Accepts ArrayList<Integer> from the game client, converts internally to int[].
     public COSC322Node FindMove(boolean white, ArrayList<Integer> gameState) {
-        COSC322Node root = new COSC322Node(gameState, 0);
+        int[] board = new int[121];
+        for (int i = 0; i < 121; i++) board[i] = gameState.get(i);
+
+        COSC322Node root = new COSC322Node(board, 0);
         ArrayList<COSC322Node> children = root.expandNode(white);
+        if (children.isEmpty()) return null;
 
-        if (children.isEmpty())
-            return null;
+        // Sort root moves best-first so iterative deepening benefits immediately
+        children.sort(Comparator.comparingInt(c -> -c.evaluate(white)));
+        children.get(0).parent = root;
 
-        // Just pick the move that minimizes opponent mobility for now
         COSC322Node bestMove = children.get(0);
-        int bestScore = Integer.MAX_VALUE;
+        long deadline = System.currentTimeMillis() + TIME_LIMIT_MS;
 
-        for (COSC322Node child : children) {
-            int score = child.getHValue(white); // This is opponentMobility - myMobility
-            if (score < bestScore) {
-                bestScore = score;
-                bestMove = child;
+        for (int depth = 1; ; depth++) {
+            timeUp = false;
+            COSC322Node result = searchAtDepth(root, children, depth, white, deadline);
+            if (!timeUp && result != null) {
+                bestMove = result;
             }
+            if (timeUp || System.currentTimeMillis() >= deadline) break;
         }
 
-        bestMove.parent = root;
         return bestMove;
     }
 
-    // public COSC322Node FindMove(boolean white, ArrayList<Integer> gameState){
-    // COSC322Node root = new COSC322Node(gameState, 0); //Initialise current
-    // position as root.
-    // //TODO: Perform A* search
+    private COSC322Node searchAtDepth(COSC322Node root, ArrayList<COSC322Node> children,
+                                      int depth, boolean white, long deadline) {
+        COSC322Node bestMove = null;
+        int bestScore = Integer.MIN_VALUE;
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
 
-    // ArrayList<COSC322Node> open = new ArrayList<COSC322Node>();
-    // open.add(root);
-    // ArrayList<COSC322Node> closed = new ArrayList<COSC322Node>();
-
-    // int maxIterations = 10000;
-    // int iterations = 0;
-
-    // while (!open.isEmpty() && iterations < maxIterations) {
-    // iterations++;
-    // COSC322Node q = open.get(0);
-    // int bestIndex = 0;
-    // for (int i = 1; i < open.size(); i++) {
-    // if (q.getFValueAStar(white) > open.get(i).getFValueAStar(white)) {
-    // q = open.get(i);
-    // bestIndex = i;
-    // }
-    // }
-    // if(isGoalState(q, white)) {
-    // return findCurrentMove(q, root);
-    // //figure out move returning later
-    // }
-
-    // open.remove(bestIndex);
-    // closed.add(q);
-
-    // ArrayList<COSC322Node> children = q.expandNode(white);
-    // for (COSC322Node child : children) {
-    // if (listContains(child, closed)) {
-    // continue;
-    // }
-
-    // int openStateIndex = indexInList(child, open);
-    // if (!listContains(child, open)) {
-    // child.parent = q;
-    // open.add(child);
-    // } else if (child.getFValueAStar(white) <
-    // open.get(openStateIndex).getFValueAStar(white)) {
-    // child.parent = q;
-    // open.set(openStateIndex, child);
-    // }
-    // }
-    // }
-    // return root.expandNode(white).get(0);
-    // }
-
-    // private boolean isGoalState(COSC322Node node, boolean white) {
-    // // Goal: opponent has no legal moves
-    // int opponentId = white ? 2 : 1;
-
-    // for (int i = 0; i < 64; i++) {
-    // if (node.state.get(i) == opponentId) {
-    // ArrayList<Integer> moves = node.getArrowPlacementsFromMove(-100, i, !white);
-    // if (!moves.isEmpty()) {
-    // return false; // Opponent has at least one move
-    // }
-    // }
-    // }
-    // return true;
-    // }
-
-    private boolean listContains(COSC322Node node, ArrayList<COSC322Node> list) {
-        for (COSC322Node n : list) {
-            if (n.state.equals(node.state)) {
-                return true;
+        for (COSC322Node child : children) {
+            if (System.currentTimeMillis() >= deadline) {
+                timeUp = true;
+                break;
             }
+            child.parent = root;
+            int score = minimax(child, depth - 1, alpha, beta, false, white, deadline);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = child;
+            }
+            if (bestScore > alpha) alpha = bestScore;
         }
-        return false;
+
+        return bestMove;
     }
 
-    private int indexInList(COSC322Node node, ArrayList<COSC322Node> list) {
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).state.equals(node.state)) {
-                return i;
-            }
+    // maximizing=true → our turn; maximizing=false → opponent's turn
+    private int minimax(COSC322Node node, int depth, int alpha, int beta,
+                        boolean maximizing, boolean weAreWhite, long deadline) {
+        if (System.currentTimeMillis() >= deadline) {
+            timeUp = true;
+            return 0;
         }
-        return -1;
-    }
 
-    // Keeps looping until it finds an ancestor node of the goal state who's parent
-    // is the current board state and returns that ancestor
-    private COSC322Node findCurrentMove(COSC322Node gs, COSC322Node root) {
-        if (!gs.parent.equals(root)) {
-            findCurrentMove(gs.parent, root);
+        boolean currentPlayerIsWhite = maximizing ? weAreWhite : !weAreWhite;
+        ArrayList<COSC322Node> children = node.expandNode(currentPlayerIsWhite);
+
+        if (depth == 0 || children.isEmpty()) {
+            return node.evaluate(weAreWhite);
+        }
+
+        if (maximizing) {
+            // Try best-for-us moves first to raise alpha quickly
+            children.sort(Comparator.comparingInt(c -> -c.evaluate(weAreWhite)));
+            int maxEval = Integer.MIN_VALUE;
+            for (COSC322Node child : children) {
+                if (timeUp) break;
+                int eval = minimax(child, depth - 1, alpha, beta, false, weAreWhite, deadline);
+                if (eval > maxEval) maxEval = eval;
+                if (maxEval > alpha) alpha = maxEval;
+                if (beta <= alpha) break;
+            }
+            return maxEval;
         } else {
-            return gs;
+            // Try worst-for-us moves first to lower beta quickly
+            children.sort(Comparator.comparingInt(c -> c.evaluate(weAreWhite)));
+            int minEval = Integer.MAX_VALUE;
+            for (COSC322Node child : children) {
+                if (timeUp) break;
+                int eval = minimax(child, depth - 1, alpha, beta, true, weAreWhite, deadline);
+                if (eval < minEval) minEval = eval;
+                if (minEval < beta) beta = minEval;
+                if (beta <= alpha) break;
+            }
+            return minEval;
         }
-        return null;
     }
 }
