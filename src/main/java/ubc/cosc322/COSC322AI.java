@@ -17,11 +17,12 @@ public class COSC322AI {
         ArrayList<COSC322Node> children = root.expandNode(white);
         if (children.isEmpty()) return null;
 
-        // Sort root moves best-first so iterative deepening benefits immediately
+        // Initial move ordering at root: evaluate once and sort best-first.
+        // evaluate() caches its result on the node, so this is not wasted work.
         children.sort(Comparator.comparingInt(c -> -c.evaluate(white)));
-        children.get(0).parent = root;
 
         COSC322Node bestMove = children.get(0);
+        bestMove.parent = root;
         long deadline = System.currentTimeMillis() + TIME_LIMIT_MS;
 
         for (int depth = 1; ; depth++) {
@@ -76,7 +77,8 @@ public class COSC322AI {
         }
 
         if (maximizing) {
-            // Try best-for-us moves first to raise alpha quickly
+            // Sort best-for-us moves first to raise alpha quickly.
+            // evaluate() is cached, so this sort is cheap after the first call.
             children.sort(Comparator.comparingInt(c -> -c.evaluate(weAreWhite)));
             int maxEval = Integer.MIN_VALUE;
             for (COSC322Node child : children) {
@@ -88,7 +90,7 @@ public class COSC322AI {
             }
             return maxEval;
         } else {
-            // Try worst-for-us moves first to lower beta quickly
+            // Sort worst-for-us (best-for-opponent) moves first to lower beta quickly.
             children.sort(Comparator.comparingInt(c -> c.evaluate(weAreWhite)));
             int minEval = Integer.MAX_VALUE;
             for (COSC322Node child : children) {

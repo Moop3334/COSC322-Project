@@ -1,7 +1,7 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class COSC322Node {
@@ -9,6 +9,10 @@ public class COSC322Node {
     public int[] state;   // 121-element board (11x11 with row 0 and col 0 as padding)
     public int g;
     public COSC322Node parent;
+
+    // Cached evaluation scores to avoid redundant recomputation during sorting.
+    private int cachedEvalWhite = Integer.MIN_VALUE;
+    private int cachedEvalBlack = Integer.MIN_VALUE;
 
     public COSC322Node(int[] state, int costToReach) {
         this.state = state;
@@ -36,43 +40,55 @@ public class COSC322Node {
     public ArrayList<Integer> getReachableSquares(int oldPos, int newPos) {
         ArrayList<Integer> squares = new ArrayList<>();
 
-        for (int i = newPos - 11; i >= 0; i -= 11) {          // up
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        // Up (decreasing index by 11)
+        for (int i = newPos - 11; i > 0; i -= 11) {
+            if (i % 11 == 0) break;          // hit left-padding column → stop
+            if (i / 11 == 0) break;          // hit top-padding row    → stop
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos + 11; i < 121; i += 11) {          // down
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        for (int i = newPos + 11; i < 121; i += 11) {
+            if (i % 11 == 0) break;
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos - 1; i % 11 != 0 && i >= 0; i--) { // left
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        for (int i = newPos - 1; i > 0; i--) {
+            if (i % 11 == 0) break;          // wrapped to previous row → stop
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos + 1; i % 11 != 0 && i < 121; i++) { // right
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        for (int i = newPos + 1; i < 121; i++) {
+            if (i % 11 == 0) break;          // wrapped to next row → stop
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos - 10; i % 11 != 0 && i >= 0; i -= 10) {  // up-right
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        for (int i = newPos - 10; i > 0; i -= 10) {
+            if (i % 11 == 0) break;
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos - 12; i % 11 != 10 && i >= 0; i -= 12) { // up-left
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        // Up-left (step -12)
+        for (int i = newPos - 12; i > 0; i -= 12) {
+            if (i % 11 == 0) break;
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos + 10; i % 11 != 10 && i < 121; i += 10) { // down-left
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        // Down-left (step +10)
+        for (int i = newPos + 10; i < 121; i += 10) {
+            if (i % 11 == 0) break;
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
-        for (int i = newPos + 12; i % 11 != 0 && i < 121; i += 12) {  // down-right
-            if (i % 11 == 0 || i / 11 == 0) continue;
+        // Down-right (step +12)
+        for (int i = newPos + 12; i < 121; i += 12) {
+            if (i % 11 == 0) break;
+            if (i / 11 == 0) break;
             if (i != oldPos && state[i] != 0) break;
             squares.add(i);
         }
@@ -87,41 +103,48 @@ public class COSC322Node {
         return new COSC322Node(newState, g + 1);
     }
 
-    // Returns territory score from the perspective of whitePieces player.
-    // Positive = we control more territory, negative = opponent controls more.
+    /**
+     * Returns territory score from the perspective of the given player.
+     * Result is cached to avoid recomputing during move ordering sorts.
+     */
     public int evaluate(boolean whitePieces) {
-        return territoryScore(whitePieces);
+        if (whitePieces) {
+            if (cachedEvalWhite == Integer.MIN_VALUE)
+                cachedEvalWhite = territoryScore(true);
+            return cachedEvalWhite;
+        } else {
+            if (cachedEvalBlack == Integer.MIN_VALUE)
+                cachedEvalBlack = territoryScore(false);
+            return cachedEvalBlack;
+        }
     }
 
     // BFS flood fill from all queens simultaneously.
     // A square belongs to the side that reaches it first.
     // Score = our squares - opponent squares.
     private int territoryScore(boolean whitePieces) {
+        final int INF = Integer.MAX_VALUE / 2;
         int[] wDist = new int[121];
         int[] bDist = new int[121];
-        final int INF = Integer.MAX_VALUE / 2;
+        java.util.Arrays.fill(wDist, INF);
+        java.util.Arrays.fill(bDist, INF);
 
-        for (int i = 0; i < 121; i++) {
-            wDist[i] = INF;
-            bDist[i] = INF;
-        }
+        Queue<Integer> wQueue = new ArrayDeque<>();
+        Queue<Integer> bQueue = new ArrayDeque<>();
 
-        Queue<Integer> wQueue = new LinkedList<>();
-        Queue<Integer> bQueue = new LinkedList<>();
-
-        for (int i = 0; i < 121; i++) {
+        for (int i = 1; i < 121; i++) {
             if (i % 11 == 0 || i / 11 == 0) continue;
             if (state[i] == 1) { wDist[i] = 0; wQueue.add(i); }
             else if (state[i] == 2) { bDist[i] = 0; bQueue.add(i); }
         }
 
-        bfsFlood(wDist, wQueue);
-        bfsFlood(bDist, bQueue);
+        bfsFloodQueenRay(wDist, wQueue);
+        bfsFloodQueenRay(bDist, bQueue);
 
         int wTerritory = 0, bTerritory = 0;
-        for (int i = 0; i < 121; i++) {
+        for (int i = 1; i < 121; i++) {
             if (i % 11 == 0 || i / 11 == 0) continue;
-            if (state[i] != 0) continue; // occupied or burned
+            if (state[i] != 0) continue;  // skip occupied/burned squares
             if (wDist[i] < bDist[i]) wTerritory++;
             else if (bDist[i] < wDist[i]) bTerritory++;
         }
@@ -129,20 +152,30 @@ public class COSC322Node {
         return whitePieces ? wTerritory - bTerritory : bTerritory - wTerritory;
     }
 
-    // Step-by-step BFS in 8 directions (treats queens and arrows as walls).
-    private void bfsFlood(int[] dist, Queue<Integer> queue) {
-        int[] steps = {-11, 11, -1, 1, -10, -12, 10, 12};
+    /**
+     * Queen-ray BFS: from each frontier square, expand along all 8 queen-move
+     * rays (not just immediate neighbours). Each ray counts as distance+1 per
+     * square reached along it, so nearer queens still win contested squares.
+     * This correctly models Amazons territory.
+     */
+    private void bfsFloodQueenRay(int[] dist, Queue<Integer> queue) {
+        final int[] STEPS = {-11, 11, -1, 1, -10, -12, 10, 12};
 
         while (!queue.isEmpty()) {
             int pos = queue.poll();
-            for (int step : steps) {
-                int next = pos + step;
-                if (next < 0 || next >= 121) continue;
-                if (next % 11 == 0 || next / 11 == 0) continue;
-                if (state[next] != 0) continue; // blocked by queen or arrow
-                if (dist[next] > dist[pos] + 1) {
-                    dist[next] = dist[pos] + 1;
-                    queue.add(next);
+            for (int step : STEPS) {
+                // Walk the full ray from pos
+                for (int next = pos + step; ; next += step) {
+                    if (next <= 0 || next >= 121) break;
+                    if (next % 11 == 0 || next / 11 == 0) break;
+                    if (state[next] != 0) break;  // blocked by queen or arrow
+                    int newDist = dist[pos] + 1;
+                    if (newDist < dist[next]) {
+                        dist[next] = newDist;
+                        queue.add(next);
+                    }
+                    // continue along the ray even if this cell already had a better dist,
+                    // because further cells might still improve via this path
                 }
             }
         }
