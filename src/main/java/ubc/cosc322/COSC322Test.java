@@ -113,18 +113,11 @@ public class COSC322Test extends GamePlayer {
 			System.out.println(msgDetails);
 			gamegui.updateGameState(msgDetails);
 			
-			// Check who made this move - only respond if it's the opponent's move
-			String movePlayer = (String) msgDetails.get("player");
-			if (movePlayer != null && movePlayer.equals(userName)) {
-				System.out.println("Received our own move - not responding");
-			} else {
-				System.out.println("Received opponent move from: " + movePlayer + ", we are: " + userName);
-				ArrayList<Integer> queenCurrent = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
-				ArrayList<Integer> queenNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
-				ArrayList<Integer> arrow = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
-				applyMove(queenCurrent, queenNext, arrow);
-				makeMove();
-			}
+			ArrayList<Integer> queenCurrent = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
+			ArrayList<Integer> queenNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
+			ArrayList<Integer> arrow = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
+			applyMove(queenCurrent, queenNext, arrow);
+			makeMove();
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_START)) {
 			ArrayList<Integer> state = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
 
