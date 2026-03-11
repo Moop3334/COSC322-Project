@@ -112,11 +112,19 @@ public class COSC322Test extends GamePlayer {
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_MOVE)) {
 			System.out.println(msgDetails);
 			gamegui.updateGameState(msgDetails);
-			ArrayList<Integer> queenCurrent = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
-			ArrayList<Integer> queenNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
-			ArrayList<Integer> arrow = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
-			applyMove(queenCurrent, queenNext, arrow);
-			makeMove();
+			
+			// Check who made this move - only respond if it's the opponent's move
+			String movePlayer = (String) msgDetails.get("player");
+			if (movePlayer != null && movePlayer.equals(userName)) {
+				System.out.println("Received our own move - not responding");
+			} else {
+				System.out.println("Received opponent move from: " + movePlayer + ", we are: " + userName);
+				ArrayList<Integer> queenCurrent = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
+				ArrayList<Integer> queenNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
+				ArrayList<Integer> arrow = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
+				applyMove(queenCurrent, queenNext, arrow);
+				makeMove();
+			}
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_START)) {
 			ArrayList<Integer> state = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
 
@@ -131,9 +139,13 @@ public class COSC322Test extends GamePlayer {
 			isWhite = userName.equals(whitePlayer);
 
 			System.out.println("We are playing as: " + (isWhite ? "WHITE" : "BLACK"));
+			System.out.println("Black goes first check: !isWhite = " + (!isWhite));
 
 			if (!isWhite && this.currentBoardState != null) {
+				System.out.println("BLACK making first move!");
 				makeMove();
+			} else if (isWhite) {
+				System.out.println("WHITE waiting for Black to move first...");
 			}
 		}
 		return true;
