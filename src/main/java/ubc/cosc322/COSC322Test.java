@@ -132,7 +132,7 @@ public class COSC322Test extends GamePlayer {
 
 			System.out.println("We are playing as: " + (isWhite ? "WHITE" : "BLACK"));
 
-			if (isWhite && this.currentBoardState != null) {
+			if (!isWhite && this.currentBoardState != null) {
 				makeMove();
 			}
 		}
@@ -169,6 +169,11 @@ public class COSC322Test extends GamePlayer {
 		int from = queenCurrent.get(0) * 11 + queenCurrent.get(1);
 		int to = queenNext.get(0) * 11 + queenNext.get(1);
 		int arr = arrow.get(0) * 11 + arrow.get(1);
+		// Validate indices are within bounds
+		if (from < 0 || from >= 121 || to < 0 || to >= 121 || arr < 0 || arr >= 121) {
+			System.err.println("Invalid move coordinates: from=" + from + ", to=" + to + ", arr=" + arr);
+			return;
+		}
 		int piece = currentBoardState.get(from);
 		currentBoardState.set(from, 0);
 		currentBoardState.set(to, piece);
@@ -222,6 +227,11 @@ public class COSC322Test extends GamePlayer {
 		ArrayList<Integer> arrow = new ArrayList<>();
 		arrow.add(arrowIdx / 11);
 		arrow.add(arrowIdx % 11);
+		// Validate move indices
+		if (fromIdx < 0 || fromIdx >= 121 || toIdx < 0 || toIdx >= 121 || arrowIdx < 0 || arrowIdx >= 121) {
+			System.err.println("Invalid move indices detected");
+			return;
+		}
 
 		// Sync currentBoardState (ArrayList) from the chosen child int[]
 		for (int i = 0; i < 121; i++) currentBoardState.set(i, child[i]);

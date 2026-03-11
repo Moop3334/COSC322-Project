@@ -21,7 +21,7 @@ public class COSC322Node {
 
         for (int i = 0; i < 121; i++) {
             if (state[i] == pieceId) {
-                for (int j : getReachableSquares(-100, i)) {
+                for (int j : getReachableSquares(i, i)) {
                     for (int k : getReachableSquares(i, j)) {
                         nodes.add(generateChild(i, j, k, pieceId));
                     }

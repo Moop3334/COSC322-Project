@@ -5,10 +5,10 @@ import java.util.Comparator;
 
 public class COSC322AI {
 
-    private static final long TIME_LIMIT_MS = 8000; // 8 seconds per move
-    private boolean timeUp;
+        private static final long TIME_LIMIT_MS = 8000; // 8 seconds per move
+        private boolean timeUp;
 
-    // Accepts ArrayList<Integer> from the game client, converts internally to int[].
+        // Accepts ArrayList<Integer> from the game client, converts internally to int[].
     public COSC322Node FindMove(boolean white, ArrayList<Integer> gameState) {
         int[] board = new int[121];
         for (int i = 0; i < 121; i++) board[i] = gameState.get(i);
