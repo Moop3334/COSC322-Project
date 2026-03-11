@@ -214,16 +214,20 @@ public class COSC322Test extends GamePlayer {
 		int fromIdx = -1, toIdx = -1, arrowIdx = -1;
 		int ourPiece = isWhite ? 1 : 2;
 
+		// Find queen movement: where our piece left and where it arrived
 		for (int i = 0; i < 121; i++) {
-			int p = parent[i];
-			int c = child[i];
-
-			if (p == ourPiece && c != ourPiece)
+			if (parent[i] == ourPiece && child[i] != ourPiece)
 				fromIdx = i;
-			if (p != ourPiece && c == ourPiece)
+			if (parent[i] != ourPiece && child[i] == ourPiece)
 				toIdx = i;
-			if (p != 3 && c == 3)
+		}
+		
+		// Find arrow: must be a new '3' that is NOT where the queen landed
+		for (int i = 0; i < 121; i++) {
+			if (parent[i] != 3 && child[i] == 3 && i != toIdx) {
 				arrowIdx = i;
+				break;
+			}
 		}
 
 		if (fromIdx == -1 || toIdx == -1 || arrowIdx == -1) {
