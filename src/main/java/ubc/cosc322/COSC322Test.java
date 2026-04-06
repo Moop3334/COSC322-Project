@@ -112,6 +112,7 @@ public class COSC322Test extends GamePlayer {
 		} else if (messageType.equalsIgnoreCase(GameMessage.GAME_ACTION_MOVE)) {
 			System.out.println(msgDetails);
 			gamegui.updateGameState(msgDetails);
+			
 			ArrayList<Integer> queenCurrent = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
 			ArrayList<Integer> queenNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
 			ArrayList<Integer> arrow = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
@@ -132,8 +133,11 @@ public class COSC322Test extends GamePlayer {
 
 			System.out.println("We are playing as: " + (isWhite ? "WHITE" : "BLACK"));
 
-			if (isWhite && this.currentBoardState != null) {
+			if (!isWhite && this.currentBoardState != null) {
+				System.out.println("BLACK making first move!");
 				makeMove();
+			} else {
+				System.out.println("Waiting for opponent to move...");
 			}
 		}
 		return true;
@@ -169,6 +173,11 @@ public class COSC322Test extends GamePlayer {
 		int from = queenCurrent.get(0) * 11 + queenCurrent.get(1);
 		int to = queenNext.get(0) * 11 + queenNext.get(1);
 		int arr = arrow.get(0) * 11 + arrow.get(1);
+		// Validate indices are within bounds
+		if (from < 0 || from >= 121 || to < 0 || to >= 121 || arr < 0 || arr >= 121) {
+			System.err.println("Invalid move coordinates: from=" + from + ", to=" + to + ", arr=" + arr);
+			return;
+		}
 		int piece = currentBoardState.get(from);
 		currentBoardState.set(from, 0);
 		currentBoardState.set(to, piece);
@@ -190,23 +199,27 @@ public class COSC322Test extends GamePlayer {
 			return;
 		}
 
-		// Extract move by comparing states
-		ArrayList<Integer> parent = move.parent.state;
-		ArrayList<Integer> child = move.state;
+		// Extract move by comparing parent/child int[] states
+		int[] parent = move.parent.state;
+		int[] child = move.state;
 
 		int fromIdx = -1, toIdx = -1, arrowIdx = -1;
-		int ourPiece = isWhite ? 1 : 2;
+		int ourPiece = isWhite ? 2 : 1;
 
+		// Find queen movement: where our piece left and where it arrived
 		for (int i = 0; i < 121; i++) {
-			int p = parent.get(i);
-			int c = child.get(i);
-
-			if (p == ourPiece && c != ourPiece)
+			if (parent[i] == ourPiece && child[i] != ourPiece)
 				fromIdx = i;
-			if (p != ourPiece && c == ourPiece)
+			if (parent[i] != ourPiece && child[i] == ourPiece)
 				toIdx = i;
-			if (p != 3 && c == 3)
+		}
+		
+		// Find arrow: must be a new '3' that is NOT where the queen landed
+		for (int i = 0; i < 121; i++) {
+			if (parent[i] != 3 && child[i] == 3 && i != toIdx) {
 				arrowIdx = i;
+				break;
+			}
 		}
 
 		if (fromIdx == -1 || toIdx == -1 || arrowIdx == -1) {
@@ -222,8 +235,14 @@ public class COSC322Test extends GamePlayer {
 		ArrayList<Integer> arrow = new ArrayList<>();
 		arrow.add(arrowIdx / 11);
 		arrow.add(arrowIdx % 11);
+		// Validate move indices
+		if (fromIdx < 0 || fromIdx >= 121 || toIdx < 0 || toIdx >= 121 || arrowIdx < 0 || arrowIdx >= 121) {
+			System.err.println("Invalid move indices detected");
+			return;
+		}
 
-		currentBoardState = new ArrayList<>(child);
+		// Sync currentBoardState (ArrayList) from the chosen child int[]
+		for (int i = 0; i < 121; i++) currentBoardState.set(i, child[i]);
 		gameClient.sendMoveMessage(qCurr, qNext, arrow);
 		gamegui.updateGameState(qCurr, qNext, arrow);
 	}
